@@ -1,4 +1,6 @@
-// Copyrights 2019 Cyril Jean
+// MIT License
+// Copyright (c) 2019 Cyril Jean
+// SPDX-License-Identifier: MIT
 
 module dcc
   (

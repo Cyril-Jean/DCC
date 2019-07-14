@@ -13,6 +13,8 @@
 # include <verilated_vcd_c.h>
 #endif
 
+#include "dcc_analyzer.h"
+
 // Current simulation time (64-bit unsigned)
 vluint64_t main_time = 0;
 // Called by $time in Verilog
@@ -21,7 +23,7 @@ double sc_time_stamp() {
 }
 
 int main(int argc, char** argv, char** env) {
-    // This is a more complicated example, please also see the simpler examples/hello_world_c.
+    DccAnalyzer dcc_analyzer;
 
     // Prevent unused variable warnings
     if (0 && argc && argv && env) {}
@@ -86,6 +88,11 @@ int main(int argc, char** argv, char** env) {
         // Dump trace data for this cycle
         if (tfp) tfp->dump(main_time);
 #endif
+
+        // Test track output
+        if (top->clk == 0) {
+            dcc_analyzer.SampleSignal(top->dcc_out);
+        }
 
         // Read outputs
 #if 0
