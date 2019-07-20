@@ -75,7 +75,7 @@ module bit_encoder
 
           one_high, zero_high_2:
             begin
-              if (current_bit == 1'b1)
+                if (next_bit == 1'b1)
                 begin
                   encoded_out <= 1'b0;
                   state <= one_low;
@@ -85,7 +85,6 @@ module bit_encoder
                   encoded_out <= 1'b0;
                   state <= zero_low;
                 end
-              current_bit <= next_bit;
               ack <= 1'b0;
             end
 
