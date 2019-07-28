@@ -14,6 +14,7 @@
 #endif
 
 #include "dcc_analyzer.h"
+#include "apb_bfm.h"
 
 // Current simulation time (64-bit unsigned)
 vluint64_t main_time = 0;
@@ -43,6 +44,9 @@ int main(int argc, char** argv, char** env) {
     // Construct the Verilated model, from Vtop.h generated from Verilating "top.v"
     Vtop* top = new Vtop;  // Or use a const unique_ptr, or the VL_UNIQUE_PTR wrapper
 
+    // APB BFM relies on Vtop to expose one APB interface to its top level.
+    ApbBfm * apb_bfm = new ApbBfm(top);
+
 #if VM_TRACE
     // If verilator was invoked with --trace argument,
     // and if at run time passed the +trace argument, turn on tracing
@@ -68,18 +72,33 @@ int main(int argc, char** argv, char** env) {
         main_time++;  // Time passes...
 
         // Toggle clocks and such
-//        top->fastclk = !top->fastclk;
-        if ((main_time % 10) == 3) {
-            top->clk = 1;
-        }
-        if ((main_time % 10) == 8) {
-            top->clk = 0;
-        }
+//        top->fastclk = !top->fastclk;i
+        top->clk = !top->clk;
+//        if ((main_time % 10) == 3) {
+//            top->clk = 1;
+//        }
+//        if ((main_time % 10) == 8) {
+//            top->clk = 0;
+//        }
         if (main_time > 1 && main_time < 10) {
             top->reset_l = !1;  // Assert reset
         } else {
             top->reset_l = !0;  // Deassert reset
         }
+
+        if (main_time == 20) {
+            apb_bfm->write(0x800, 0xA5A5A5A5);
+        };
+        if (main_time == 30) {
+            apb_bfm->write(0x804, 0x81020304);
+        };
+         if (main_time == 40) {
+            apb_bfm->read(0x800);
+        };
+        
+
+
+        apb_bfm->drive_bus(top->clk);
 
         // Evaluate model
         top->eval();
