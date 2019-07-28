@@ -5,6 +5,9 @@
 #include <iostream>
 #include "dcc_analyzer.h"
 
+//=============================================================================
+//
+//
 DccAnalyzer::DccAnalyzer() {
     state = IDLE;
     current_level = -1;
@@ -12,12 +15,18 @@ DccAnalyzer::DccAnalyzer() {
 
     half_period_type = -1;
     half_period_count = 0;
+    previous_half_period_type = -1;
 };
 
-
+//=============================================================================
+//
+//
 DccAnalyzer::~DccAnalyzer() {
 };
 
+//=============================================================================
+//
+//
 void DccAnalyzer::SampleSignal(int level) {
     int level_transition = 0;
 
@@ -42,24 +51,24 @@ void DccAnalyzer::SampleSignal(int level) {
 
     // Decode protocol bits
     if (level_transition) {
-        int previous_half_period;
         if (current_level_count == BASE_HALF_PERIOD_LENGTH) {
-            previous_half_period = PROTOCOL_ONE;
+            half_period_type = PROTOCOL_ONE;
          } else if (current_level_count == (2 * BASE_HALF_PERIOD_LENGTH)) {
-            previous_half_period = PROTOCOL_ZERO;
+            half_period_type = PROTOCOL_ZERO;
         };
 
-        if (previous_half_period == half_period_type) {
+        if (previous_half_period_type == half_period_type) {
             ++half_period_count;
         } else {
 
-                std::cout << " -> Protocol bit " << half_period_type 
+                std::cout << " -> Protocol bit " << previous_half_period_type 
                           << " received " << (half_period_count / 2) 
                           << " times" << std::endl;
 
+            decode_protocol();
 
+            previous_half_period_type = half_period_type; 
 
-            half_period_type = previous_half_period;
             half_period_count = 1;
         };
 
@@ -67,15 +76,51 @@ void DccAnalyzer::SampleSignal(int level) {
         current_level_count = 1;
     };
 
+};
+
+//=============================================================================
+//
+//
+void DccAnalyzer::decode_protocol() {
     // Protocol decoding
     switch(state) {
         case IDLE:
-            break;
-        case LOOK_FOR_FRAME_STATE:
+            state = LOOK_FOR_PREAMBLE;
             break;
 
-        case FRAME_STARTED:
+        case LOOK_FOR_PREAMBLE:
+            std::cout << " --> Look for preamble. type: "
+                      << previous_half_period_type
+                      << ", count: " << half_period_count
+                      << std::endl;
+
+            if((previous_half_period_type == PROTOCOL_ONE) &&
+               (half_period_count >= 22)) {
+                state = LOOK_FOR_FRAME_START;
+                std::cout << " --> Preamble deteted" << std::endl;
+            };
+            break;
+
+        case LOOK_FOR_FRAME_START:
+            if((previous_half_period_type == PROTOCOL_ZERO) &&
+               (half_period_count >= 2)) {
+                std::cout << " --> Start of frame detected" << std::endl;
+                state = LOOK_FOR_ADDRESS;;
+            };
+            break;
+
+        case LOOK_FOR_ADDRESS:
+            state = LOOK_FOR_PREAMBLE;
+            break;
+
+        case LOOK_FOR_COMMAND:
+            state = LOOK_FOR_PREAMBLE;
+            break;
+
+        case FRAME_RECEIVED:
+            state = IDLE;
             break;
     };
+
 };
 

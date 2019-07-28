@@ -3,13 +3,17 @@
 // SPDX-License-Identifier: MIT
 
 #ifndef DCC_ANALYZER_H
+#define DCC_ANALYZER_H
 
 class DccAnalyzer {
 private:
     enum AnalyzerState {
         IDLE,
-        LOOK_FOR_FRAME_STATE,
-        FRAME_STARTED
+        LOOK_FOR_PREAMBLE,
+        LOOK_FOR_FRAME_START,
+        LOOK_FOR_ADDRESS,
+        LOOK_FOR_COMMAND,
+        FRAME_RECEIVED
     };
 
     enum AnalyzerState state;
@@ -27,8 +31,12 @@ private:
     int half_period_count;
     int half_period_type;
 
+    int previous_half_period_type;
+
     static const int prescaled_length = 4;
-    static const int BASE_HALF_PERIOD_LENGTH = 40;
+    static const int BASE_HALF_PERIOD_LENGTH = 8;
+
+    void decode_protocol();
 
 public:
     DccAnalyzer();
