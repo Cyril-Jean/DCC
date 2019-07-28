@@ -4,9 +4,11 @@
 
 module dcc
   (
-    input      clk,
-    input      reset_n,
-    output reg track_out
+    input             clk,
+    input             reset_n,
+    output reg [9:0]  cmd_index,
+    input      [31:0] cmd_word,
+    output reg        track_out
   );
 
   parameter idle         = 4'b0000;
@@ -26,8 +28,8 @@ module dcc
   reg        next_bit;
   reg        ack_sync;
   reg [7:0]  bit_count;
-  reg [7:0]  address_byte;
-  reg [7:0]  cmd_byte;
+//  reg [7:0]  address_byte;
+//  reg [7:0]  cmd_byte;
 
   wire ser_clk;
   wire ack;
@@ -37,10 +39,11 @@ module dcc
     begin
       if (reset_n == 1'b0)
         begin
+          cmd_index <= 0;
           addr_cmd <= 16'hAFF5;
           ack_sync <= 1'b0;
-          address_byte <= 8'hFF;
-          cmd_byte <= 8'hFF;
+  //        address_byte <= 8'hFF;
+  //        cmd_byte <= 8'hFF;
         end
     end
 
@@ -98,8 +101,11 @@ module dcc
                 if (ack & !ack_sync)
                   begin
                     state <= address;
-                    next_bit <= address_byte[0];
-                    shift_out <= {9'h0, address_byte[7:1]};
+//                    next_bit <= address_byte[0];
+//                    shift_out <= {9'h0, address_byte[7:1]};
+                    next_bit <= cmd_word[8];
+                    shift_out <= {9'h0, cmd_word[15:9]};
+
                     bit_count <= 8'b0;
                  end
 
@@ -114,8 +120,11 @@ module dcc
                 if (ack & !ack_sync)
                   begin
                     state <= instruction;
-                    next_bit <= cmd_byte[0];
-                    shift_out <= {9'h0, cmd_byte[7:1]};
+//                    next_bit <= cmd_byte[0];
+//                    shift_out <= {9'h0, cmd_byte[7:1]};
+                    next_bit <= cmd_word[0];
+                    shift_out <= {9'h0, cmd_word[7:1]};
+
                     bit_count <= 8'b0;
                   end
 
@@ -130,8 +139,11 @@ module dcc
                 if (ack & !ack_sync)
                   begin
                     state <= error_detect;
-                    next_bit <= address_byte[0] ^ cmd_byte[0];
-                    shift_out <= {9'b0, address_byte[7:1] ^ cmd_byte[7:1]};
+//                    next_bit <= address_byte[0] ^ cmd_byte[0];
+//                    shift_out <= {9'b0, address_byte[7:1] ^ cmd_byte[7:1]};
+                    next_bit <= cmd_word[8] ^ cmd_word[0];
+                    shift_out <= {9'b0, cmd_word[15:9] ^ cmd_word[7:1]};
+
                     bit_count <= 8'd0;
                   end
 
@@ -141,6 +153,8 @@ module dcc
                     state <= preamble;
                     next_bit <= 1'b1;
                     bit_count <= 8'd0;
+
+                    cmd_index <= cmd_index + 1'b1;
                   end
 
             default:
