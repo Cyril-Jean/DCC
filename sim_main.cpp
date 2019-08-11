@@ -95,7 +95,10 @@ int main(int argc, char** argv, char** env) {
          if (main_time == 40) {
             apb_bfm->read(0x800);
         };
-        
+         if (main_time == 30) {
+            apb_bfm->write(0x808, 0x81123344);
+        };
+       
 
 
         apb_bfm->drive_bus(top->clk);
