@@ -19,6 +19,7 @@ module dcc
   parameter instruction  = 4'b1011;
   parameter error_start  = 4'b1100;
   parameter error_detect = 4'b1111;
+  parameter end_bit      = 4'b1110;
 
   parameter SHIFT_BITS   = 4'b0001;
 
@@ -150,11 +151,18 @@ module dcc
             error_detect:
                 if (bit_count == 8'd8)
                   begin
-                    state <= preamble;
+                    state <= end_bit;
                     next_bit <= 1'b1;
                     bit_count <= 8'd0;
 
                     cmd_index <= cmd_index + 1'b1;
+                  end
+
+            end_bit:
+                if (ack & !ack_sync)
+                  begin
+                    state <= preamble;
+                    bit_count <= 8'd0;
                   end
 
             default:
