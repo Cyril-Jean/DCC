@@ -63,9 +63,16 @@ int main(int argc, char** argv, char** env) {
 #endif
 
     // Set some inputs
-    top->reset_l = !0;
+    top->reset_l = !1;
+    top->presetn = !1;
 //    top->fastclk = 0;
-    top->clk = 0;
+    top->clk = !0;
+
+    // Keep the reset active for a few clock cycles before really starting the fun.
+    for (int inc = 0; inc < 32; inc++) {
+        top->clk = !top->clk;
+        top->eval();
+    }
 
     // Simulate until $finish
     while (!Verilated::gotFinish()) {
@@ -82,21 +89,23 @@ int main(int argc, char** argv, char** env) {
 //        }
         if (main_time > 1 && main_time < 10) {
             top->reset_l = !1;  // Assert reset
+            top->presetn = !1;
         } else {
             top->reset_l = !0;  // Deassert reset
+            top->presetn = !0;
         }
 
         if (main_time == 20) {
-            apb_bfm->write(0x800, 0xA5A5A5A5);
+            apb_bfm->write(0x800, 0x0DA7A6A5);
         };
         if (main_time == 30) {
-            apb_bfm->write(0x804, 0x81020304);
+            apb_bfm->write(0x804, 0x35020304);
         };
          if (main_time == 40) {
             apb_bfm->read(0x800);
         };
-         if (main_time == 30) {
-            apb_bfm->write(0x808, 0x81123344);
+         if (main_time == 50) {
+            apb_bfm->write(0x808, 0xB5123344);
         };
        
 
