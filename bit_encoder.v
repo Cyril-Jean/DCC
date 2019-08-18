@@ -6,7 +6,7 @@ module bit_encoder
   (
     input      clk,
     input      reset_n,
-    input      next_bit,
+    input      next_bit_in,
     output     ack,
     output reg encoded_out
   );
@@ -19,7 +19,7 @@ module bit_encoder
   parameter one_low     = 3'b101;
   parameter one_high    = 3'b110;
 
-  reg       current_bit;
+  reg       next_bit;
   reg [2:0] state;
   reg [7:0] prescaler;
 
@@ -29,6 +29,9 @@ module bit_encoder
   assign ser_clk = prescaler[2];
   always @ (posedge clk)
     begin
+//      if (reset_n == 1'b0)
+//        prescaler <= 0;
+//      else
       prescaler <= prescaler + 1;
     end
 
@@ -37,25 +40,20 @@ module bit_encoder
     begin
       if (reset_n == 1'b0)
         begin
-          state <= idle;
-          encoded_out <= 1'b1;
-          current_bit <= 1'b0;
+          state <= zero_low;
+          next_bit <= 1'b0;
+          encoded_out <= 1'b0;
           ack <= 1'b0;
         end
       else
         case (state)
-          idle:
-            begin
-              encoded_out <= 1'b0;
-              state <= zero_low;
-            end
-
           zero_low:
             state <= zero_low_2;
 
           zero_low_2:
             begin
               encoded_out <= 1'b1;
+              next_bit <= next_bit_in;
               ack <= 1'b1;
               state <= zero_high;
             end
@@ -70,6 +68,7 @@ module bit_encoder
             begin
               encoded_out <= 1'b1;
               ack <= 1'b1;
+              next_bit <= next_bit_in;
               state <= one_high;
             end
 
@@ -89,7 +88,10 @@ module bit_encoder
             end
 
           default:
-            state <= idle;
+            begin
+              encoded_out <= 1'b0;
+              state <= zero_low;
+            end
         endcase
     end
 
