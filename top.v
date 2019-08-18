@@ -62,7 +62,7 @@ module top
       else
         begin
           elapsed_clock <= elapsed_clock + 1;
-          if (elapsed_clock[12] == 1'b1) $finish;
+          if (elapsed_clock[13] == 1'b1) $finish;
         end
     end
 
