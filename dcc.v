@@ -13,24 +13,30 @@ module dcc
 
   parameter idle         = 4'b0000;
   parameter preamble     = 4'b0010;
-  parameter packet_start = 4'b0100;
-  parameter address      = 4'b0111;
-  parameter instr_start  = 4'b1000;
-  parameter instruction  = 4'b1011;
-  parameter error_start  = 4'b1100;
+  parameter start_bit    = 4'b0100;
+  parameter frame_byte   = 4'b0111;
   parameter error_detect = 4'b1111;
   parameter end_bit      = 4'b1110;
 
   parameter SHIFT_BITS   = 4'b0001;
 
+  parameter empty       = 2'b00;
+  parameter valid_byte  = 2'b01;
+  parameter last_byte   = 2'b11;
+
   reg [3:0]  state;
-  reg [15:0] addr_cmd;
-  reg [15:0] shift_out;
+  reg [6:0] shift_out;
   reg        next_bit;
   reg        ack_sync;
   reg [7:0]  bit_count;
-//  reg [7:0]  address_byte;
-//  reg [7:0]  cmd_byte;
+
+  reg [7:0]  next_byte;
+  reg [1:0]  next_byte_cmd;
+  reg        is_last_byte;
+  reg [1:0]  subword_idx;
+  reg [7:0]  err_det_byte;  // Error detection byte: XOR of frame bytes
+
+  reg        back_to_start;
 
   wire ser_clk;
   wire ack;
@@ -41,10 +47,11 @@ module dcc
       if (reset_n == 1'b0)
         begin
           cmd_index <= 0;
-          addr_cmd <= 16'hAFF5;
           ack_sync <= 1'b0;
-  //        address_byte <= 8'hFF;
-  //        cmd_byte <= 8'hFF;
+          next_byte <= 8'b0;
+          next_byte_cmd <= empty;
+          is_last_byte <= 1'b0;
+          back_to_start <= 0;
         end
     end
 
@@ -61,21 +68,23 @@ module dcc
         begin
         if (ack & !ack_sync)
           begin
-            next_bit <= shift_out[0];
-            shift_out[15:0] <= {1'b0, shift_out[15:1]};
+            next_bit <= shift_out[6];
+            shift_out[6:0] <= {shift_out[5:0], 1'b0};
             bit_count <= bit_count + 1'b1;
           end
         end
     end
 
   //---------------------------------------------------------------------------
-  always @(posedge clk)
+ always @(posedge clk)
     begin
       if (reset_n == 1'b0)
         begin
           state <= idle;
-          shift_out <= 16'h0000;
+          shift_out <= 7'h00;
           next_bit <= 1'b0;
+          subword_idx <= 2'b00;
+          err_det_byte <= 8'b0;
         end
       else
         begin
@@ -93,59 +102,74 @@ module dcc
                     bit_count <= bit_count + 1;
                     if (bit_count == 8'd10)
                       begin
-                        state <= packet_start;
+                        state <= start_bit;
                         next_bit <= 1'b0;
+                        subword_idx <= 2'b0;
+                        next_byte <= cmd_word[7:0];
+                        next_byte_cmd <= cmd_word[25:24];
+                        err_det_byte <= 8'd0;
                       end
                   end
 
-            packet_start:
+            start_bit:
                 if (ack & !ack_sync)
                   begin
-                    state <= address;
-//                    next_bit <= address_byte[0];
-//                    shift_out <= {9'h0, address_byte[7:1]};
-                    next_bit <= cmd_word[8];
-                    shift_out <= {9'h0, cmd_word[15:9]};
+                    if (is_last_byte == 1'b1)
+                      begin
+                        state <= error_detect;
+                        is_last_byte <= 1'b0;
+                        next_bit <= err_det_byte[7];
+                        shift_out <= err_det_byte[6:0];
+                      end
+                    else
+                      begin
+                        state <= frame_byte;
+                        next_bit <= next_byte[7];
+                        shift_out <= next_byte[6:0];
+                        err_det_byte <= err_det_byte ^ next_byte[7:0];
+                      end
+
+                    if (next_byte_cmd == last_byte)
+                      begin
+                        is_last_byte <= 1'b1;
+                      end
 
                     bit_count <= 8'b0;
+                    subword_idx <= subword_idx + 1'b1;
                  end
 
-            address:
+            frame_byte:
                 if (bit_count == 8'd8)
                   begin
-                    state <= instr_start;
+                    state <= start_bit;
                     next_bit <= 1'b0;
-                  end
+                    // Setup for next frame byte
+                    case (subword_idx)
+                      2'd0:
+                        begin
+                          next_byte <= cmd_word[7:0];
+                          next_byte_cmd <= cmd_word[25:24];
+                        end
 
-            instr_start:
-                if (ack & !ack_sync)
-                  begin
-                    state <= instruction;
-//                    next_bit <= cmd_byte[0];
-//                    shift_out <= {9'h0, cmd_byte[7:1]};
-                    next_bit <= cmd_word[0];
-                    shift_out <= {9'h0, cmd_word[7:1]};
+                      2'd1:
+                        begin
+                          next_byte <= cmd_word[15:8];
+                          next_byte_cmd <= cmd_word[27:26];
+                        end
 
-                    bit_count <= 8'b0;
-                  end
+                      2'd2:
+                        begin
+                          next_byte <= cmd_word[23:16];
+                          next_byte_cmd <= cmd_word[29:28];
+                        end
 
-            instruction:
-                if (bit_count == 8'd8)
-                  begin
-                    state <= error_start;
-                    next_bit <= 1'b0;
-                  end
-
-            error_start:
-                if (ack & !ack_sync)
-                  begin
-                    state <= error_detect;
-//                    next_bit <= address_byte[0] ^ cmd_byte[0];
-//                    shift_out <= {9'b0, address_byte[7:1] ^ cmd_byte[7:1]};
-                    next_bit <= cmd_word[8] ^ cmd_word[0];
-                    shift_out <= {9'b0, cmd_word[15:9] ^ cmd_word[7:1]};
-
-                    bit_count <= 8'd0;
+                      default:
+                        begin
+                          next_byte <= 8'd0;
+                          next_byte_cmd <= 2'd0;
+                        end
+                    endcase
+                    back_to_start <= cmd_word[31];
                   end
 
             error_detect:
@@ -154,8 +178,10 @@ module dcc
                     state <= end_bit;
                     next_bit <= 1'b1;
                     bit_count <= 8'd0;
-
-                    cmd_index <= cmd_index + 1'b1;
+                    if (back_to_start)
+                      cmd_index <= 10'b0;
+                    else
+                      cmd_index <= cmd_index + 1'b1;
                   end
 
             end_bit:
@@ -174,7 +200,7 @@ module dcc
   //
   bit_encoder bit_encoder(.clk(clk),
                           .reset_n(reset_n),
-                          .next_bit(next_bit),
+                          .next_bit_in(next_bit),
                           .ack(ack),
                           .encoded_out(track_out));
 
