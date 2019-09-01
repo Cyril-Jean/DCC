@@ -26,6 +26,7 @@ COMPILE.cc = $(OBJCACHE) $(CXX) $(CXXFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -c
 # Override some default compile flags
 CPPFLAGS += -MMD -MP
 CPPFLAGS += -DVL_DEBUG=1
+CPPFLAGS += -I../cpp_apb_bfm -I../cpp_analyzer
 # Turn on some more flags (when configured appropriately)
 # For testing inside Verilator, "configure --enable-ccwarn" will do this
 # automatically; otherwise you may want this unconditionally enabled

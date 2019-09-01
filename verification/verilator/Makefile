@@ -61,7 +61,7 @@ run:
 
 	@echo
 	@echo "-- VERILATE ----------------"
-	$(VERILATOR) $(VERILATOR_FLAGS) -f input.vc top.v sim_main.cpp dcc_analyzer.cpp apb_bfm.cpp
+	$(VERILATOR) $(VERILATOR_FLAGS) -f input.vc top.v sim_main.cpp ./cpp_analyzer/dcc_analyzer.cpp ./cpp_apb_bfm/apb_bfm.cpp -y ../../verilog
 
 	@echo
 	@echo "-- COMPILE -----------------"
