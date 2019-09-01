@@ -15,20 +15,23 @@ DccAnalyzer::DccAnalyzer() {
 
     half_period_type = -1;
     half_period_count = 0;
+    byte_half_period_count = 0;
+    zero_half_period_count = 0;
     previous_half_period_type = -1;
-};
+    rx_byte_index = 0;
+    error_code = 0;
+}
 
 //=============================================================================
 //
 //
 DccAnalyzer::~DccAnalyzer() {
-};
+}
 
 //=============================================================================
 //
 //
 void DccAnalyzer::SampleSignal(int level) {
-    int level_transition = 0;
     int rxed_half_period;
 
     rxed_half_period = decode_level(level);
@@ -38,7 +41,15 @@ void DccAnalyzer::SampleSignal(int level) {
 
         decode_protocol(rxed_half_period);
     };
-};
+}
+
+int DccAnalyzer::RxedLength() {
+	return(rx_byte_index);
+}
+
+int * DccAnalyzer::RxedFrame() {
+	return(rxed_bytes);
+}
 
 //=============================================================================
 //
@@ -67,7 +78,7 @@ int DccAnalyzer::decode_level(int level) {
     };
 
     return rxed_level;
-};
+}
 
 //=============================================================================
 //
@@ -78,15 +89,22 @@ void DccAnalyzer::decode_protocol(int half_period) {
         case LOOK_FOR_PREAMBLE:
             if (half_period == PROTOCOL_ONE) {
                 ++half_period_count;
-                if (half_period_count >= 22) {
-                    half_period_count = 0;
-                    rx_byte_index = 0;
-                    previous_half_period_type = UNKNOWN;
-                    state = LOOK_FOR_SEPARATOR;
-                    report_preamble_detected();
-                }
             } else {
-                half_period_count = 0;
+            	if (half_period_count < 22) {
+            		half_period_count = 0;
+            		zero_half_period_count = 0;
+            	} else {
+            		// half_period_count >= 22
+					zero_half_period_count++;
+					if (zero_half_period_count == 2) {
+						state = RETRIEVE_BYTE;
+						rx_byte_index = 0;
+						half_period_count = 0;
+						byte_half_period_count = 0;
+						previous_half_period_type = UNKNOWN;
+						report_preamble_detected();
+					}
+            	}
             }
             break;
 
@@ -97,6 +115,7 @@ void DccAnalyzer::decode_protocol(int half_period) {
                         report_start_bit_found();
                         byte_half_period_count = 0;
                         half_period_count = 0;
+                        error_code = 0;
                         state = RETRIEVE_BYTE;
                     }
                     break;
@@ -128,12 +147,14 @@ void DccAnalyzer::decode_protocol(int half_period) {
                 rxed_byte = get_byte_from_half_periods(byte_half_period);
                 if (rxed_byte < 0) {
                     report_invalid_address();
-                    half_period_count = 0; 
+                    half_period_count = 0;
+                    zero_half_period_count = 0;
                     state = LOOK_FOR_PREAMBLE;
                 } else {
                     if (rx_byte_index < 6) {
                         rxed_bytes[rx_byte_index] = rxed_byte;
                         ++rx_byte_index;
+                        error_code ^= rxed_byte;
                     }
                     previous_half_period_type = UNKNOWN;
                     state = LOOK_FOR_SEPARATOR;
@@ -146,7 +167,7 @@ void DccAnalyzer::decode_protocol(int half_period) {
             state = LOOK_FOR_PREAMBLE;
             break;
     };
-};
+}
 
 //=============================================================================
 //
@@ -164,7 +185,7 @@ int DccAnalyzer::get_byte_from_half_periods(int rx_half_periods[16]) {
         byte = (byte << 1) | rx_half_periods[inc];
     }
     return byte;
-};
+}
 
 //=============================================================================
 //
@@ -186,7 +207,7 @@ void DccAnalyzer::report_level_change
 
 void DccAnalyzer::report_preamble_detected() {
     if (verbosity >= MEDIUM) {
-        std::cout << " --> Preamble detected" 
+        std::cout << " --> Preamble detected"
                   << " -----------------------------"
                   << std::endl;
     }
@@ -194,7 +215,7 @@ void DccAnalyzer::report_preamble_detected() {
 
 void DccAnalyzer::report_sof_detected() {
     if (verbosity >= MEDIUM) {
-        std::cout << " --> Start of frame detected" 
+        std::cout << " --> Start of frame detected"
                   << " -------------------------"
                   << std::endl;
     }
@@ -202,7 +223,7 @@ void DccAnalyzer::report_sof_detected() {
 
 void DccAnalyzer::report_invalid_address() {
     if (verbosity >= MEDIUM) {
-        std::cout << " --> Invalid address received" 
+        std::cout << " --> Invalid address received"
                   << " -------------------------"
                   << std::endl;
     }
@@ -219,7 +240,7 @@ void DccAnalyzer::report_rxed_byte(int value) {
 
 void DccAnalyzer::report_cmd_start() {
     if (verbosity >= MEDIUM) {
-        std::cout << " --> Command start detected" 
+        std::cout << " --> Command start detected"
                   << " ------------------------"
                   << std::endl;
     }
@@ -227,7 +248,7 @@ void DccAnalyzer::report_cmd_start() {
 
 void DccAnalyzer::report_start_bit_found() {
     if (verbosity >= MEDIUM) {
-        std::cout << " --> Start bit found" 
+        std::cout << " --> Start bit found"
                   << " -----------------------------"
                   << std::endl;
     }
@@ -241,9 +262,10 @@ void DccAnalyzer::report_frame_received() {
                   << rxed_bytes[inc] <<" ";
     }
 
-    std::cout << " -------------------------------"
-              << std::endl;
-
-
+    if (error_code == rxed_bytes[rx_byte_index - 1]) {
+    	std::cout << " --- Valid frame" << std::endl;
+    } else {
+    	std::cout << " !!! INVALID ERROR CODE !!!" << std::endl;
+    }
 }
 

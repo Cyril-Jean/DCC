@@ -10,7 +10,7 @@ private:
     enum AnalyzerState {
         LOOK_FOR_PREAMBLE,
         LOOK_FOR_SEPARATOR,
-        RETRIEVE_BYTE,
+        RETRIEVE_BYTE
     };
 
     enum VerboseLevel {
@@ -37,6 +37,9 @@ private:
 
     int half_period_count;
     int half_period_type;
+    int zero_half_period_count;
+
+    int error_code;
 
     int previous_half_period_type;
     int byte_half_period[16];
@@ -66,7 +69,9 @@ public:
     DccAnalyzer();
     ~DccAnalyzer();
 
-    void SampleSignal(int level); 
+    void SampleSignal(int level);
+    int RxedLength();
+    int * RxedFrame();
 };
 
 #endif
