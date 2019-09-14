@@ -7,7 +7,7 @@ module bit_encoder
     input      clk,
     input      reset_n,
     input      next_bit_in,
-    output     ack,
+    output reg ack,
     output reg encoded_out
   );
 
@@ -36,7 +36,7 @@ module bit_encoder
     end
 
   // State machine
-  always @ (posedge ser_clk)
+  always @ (posedge ser_clk or negedge reset_n)
     begin
       if (reset_n == 1'b0)
         begin
@@ -96,4 +96,3 @@ module bit_encoder
     end
 
 endmodule
-

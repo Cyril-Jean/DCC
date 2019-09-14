@@ -30,7 +30,7 @@ module apb_dcc_ctrl
   //---------------------------------------------------------------------------
   // APB peripheral reset
   //
-  always @(posedge pclk)
+  always @(posedge pclk or negedge presetn)
     begin
       if (presetn == 1'b0)
         begin
@@ -41,7 +41,7 @@ module apb_dcc_ctrl
   //---------------------------------------------------------------------------
   // Control register
   //
-  always @(posedge pclk)
+  always @(posedge pclk or negedge presetn)
     begin
       if ((psel == 1'b1) & (pwrite == 1'b1) & (penable == 1'b1))
         begin
@@ -57,7 +57,7 @@ module apb_dcc_ctrl
                           & (penable == 1'b1) 
                           & (paddr[11] == 1'b1);
 
-  addr_cmd_mem addr_cmd_mem1
+  addr_cmd_mem addr_cmd_mem_inst
     (
       .reset_n(presetn),
       .clk_a      (pclk),
@@ -75,11 +75,10 @@ module apb_dcc_ctrl
 //-----------------------------------------------------------------------------
 // DCC
 //
-dcc dcc1 (.clk(pclk),
+dcc dcc_inst (.clk(pclk),
           .reset_n(presetn),
           .track_out(dcc_out),
           .cmd_index(cmd_index),
           .cmd_word(cmd_word));    
 
-endmodule;
-
+endmodule

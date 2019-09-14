@@ -9,19 +9,17 @@ module addr_cmd_mem
     input         clk_a,
     input  [31:0] dat_in_a,
     input  [9:0]  address_a,
-    output [31:0] dat_out_a,
+    output reg [31:0] dat_out_a,
     input         wr_a,
     // Encoder port
     input         clk_b,
     input  [31:0] dat_in_b,
     input  [9:0]  address_b,
-    output [31:0] dat_out_b,
+    output reg [31:0] dat_out_b,
     input         wr_b
   );
 
   reg [31:0]  memory[512:0];
-  reg [31:0]  dat_out_a;
-  reg [31:0]  dat_out_b;
 
   //
   // Host port
@@ -50,4 +48,3 @@ module addr_cmd_mem
     end
 
 endmodule
-

@@ -38,14 +38,19 @@ module dcc
 
   reg        back_to_start;
 
-  wire ser_clk;
   wire ack;
+  wire track_out;
 
-  //
-  always @(posedge clk)
+//---------------------------------------------------------------------------
+  always @(posedge clk or negedge reset_n)
     begin
-      if (reset_n == 1'b0)
+      if (!reset_n)
         begin
+          state <= idle;
+          shift_out <= 7'h00;
+          next_bit <= 1'b0;
+          subword_idx <= 2'b00;
+          err_det_byte <= 8'b0;
           cmd_index <= 0;
           ack_sync <= 1'b0;
           next_byte <= 8'b0;
@@ -53,41 +58,21 @@ module dcc
           is_last_byte <= 1'b0;
           back_to_start <= 0;
         end
-    end
-
-  //---------------------------------------------------------------------------
-  always @(posedge clk)
-    begin
-      ack_sync <= ack;
-    end
-
-  //---------------------------------------------------------------------------
-  always @(posedge clk)
-    begin
-      if ((state & SHIFT_BITS) == 4'b0001)
-        begin
-        if (ack & !ack_sync)
-          begin
-            next_bit <= shift_out[6];
-            shift_out[6:0] <= {shift_out[5:0], 1'b0};
-            bit_count <= bit_count + 1'b1;
-          end
-        end
-    end
-
-  //---------------------------------------------------------------------------
- always @(posedge clk)
-    begin
-      if (reset_n == 1'b0)
-        begin
-          state <= idle;
-          shift_out <= 7'h00;
-          next_bit <= 1'b0;
-          subword_idx <= 2'b00;
-          err_det_byte <= 8'b0;
-        end
       else
         begin
+        
+          if ((state & SHIFT_BITS) == 4'b0001)
+            begin
+              if (ack & !ack_sync)
+                begin
+                  next_bit <= shift_out[6];
+                  shift_out[6:0] <= {shift_out[5:0], 1'b0};
+                  bit_count <= bit_count + 1'b1;
+                end
+              end
+      
+          ack_sync <= ack;
+
           case (state)
             idle:
               begin
@@ -198,11 +183,10 @@ module dcc
     end
 
   //
-  bit_encoder bit_encoder(.clk(clk),
+  bit_encoder bit_encoder_inst(.clk(clk),
                           .reset_n(reset_n),
                           .next_bit_in(next_bit),
                           .ack(ack),
                           .encoded_out(track_out));
 
 endmodule
-
