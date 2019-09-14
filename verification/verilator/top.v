@@ -24,15 +24,15 @@ module top
   );
 
   reg [31:0] elapsed_clock;
-  reg        reset_sync;
+//  reg        reset_sync;
 
-  always @(posedge clk)
-    begin
-      if (reset_l)
-        reset_sync <= 1'b1;
-      else
-        reset_sync <= 1'b0;
-     end
+//  always @(posedge clk)
+//    begin
+//      if (reset_l)
+//        reset_sync <= 1'b1;
+//      else
+//        reset_sync <= 1'b0;
+//     end
 
   // APB DCC controller
   apb_dcc_ctrl apb_dcc_ctrl1 (.presetn(reset_l),
@@ -53,7 +53,7 @@ module top
   end
 
   // Lazy test duration control. Run for a specific number of cock cycles
-  always @ (posedge clk)
+  always @ (posedge clk or negedge reset_l)
     begin
       if (reset_l == 1'b0)
         begin
