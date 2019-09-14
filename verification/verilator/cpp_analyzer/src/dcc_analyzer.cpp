@@ -5,6 +5,7 @@
 #include <iostream>
 #include "dcc_analyzer.h"
 
+
 //=============================================================================
 //
 //
@@ -89,10 +90,10 @@ void DccAnalyzer::decode_protocol(int half_period) {
         case LOOK_FOR_PREAMBLE:
             if (half_period == PROTOCOL_ONE) {
                 ++half_period_count;
+                zero_half_period_count = 0;
             } else {
             	if (half_period_count < 22) {
             		half_period_count = 0;
-            		zero_half_period_count = 0;
             	} else {
             		// half_period_count >= 22
 					zero_half_period_count++;
@@ -148,7 +149,6 @@ void DccAnalyzer::decode_protocol(int half_period) {
                 if (rxed_byte < 0) {
                     report_invalid_address();
                     half_period_count = 0;
-                    zero_half_period_count = 0;
                     state = LOOK_FOR_PREAMBLE;
                 } else {
                     if (rx_byte_index < 6) {
