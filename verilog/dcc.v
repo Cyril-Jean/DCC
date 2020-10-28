@@ -40,6 +40,7 @@ module dcc
 
   wire ack;
   wire track_out;
+  wire dcc_clk;
 
 //---------------------------------------------------------------------------
   always @(posedge clk or negedge reset_n)
@@ -183,7 +184,11 @@ module dcc
     end
 
   //
-  bit_encoder bit_encoder_inst(.clk(clk),
+  dcc_clk_gen clk_gen(.clk(clk),
+                      .reset_n(reset_n),
+                      .bus_clk(dcc_clk));
+  //
+  bit_encoder bit_encoder_inst(.dcc_clk(dcc_clk),
                           .reset_n(reset_n),
                           .next_bit_in(next_bit),
                           .ack(ack),

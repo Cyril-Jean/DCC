@@ -4,14 +4,13 @@
 
 module bit_encoder
   (
-    input      clk,
+    input      dcc_clk,
     input      reset_n,
     input      next_bit_in,
     output reg ack,
     output reg encoded_out
   );
 
-  parameter idle        = 3'b000;
   parameter zero_low    = 3'b001;
   parameter zero_low_2  = 3'b010;
   parameter zero_high   = 3'b011;
@@ -21,22 +20,9 @@ module bit_encoder
 
   reg       next_bit;
   reg [2:0] state;
-  reg [7:0] prescaler;
-
-  wire ser_clk;
-
-  // Serial port prescaler
-  assign ser_clk = prescaler[2];
-  always @ (posedge clk)
-    begin
-//      if (reset_n == 1'b0)
-//        prescaler <= 0;
-//      else
-      prescaler <= prescaler + 1;
-    end
 
   // State machine
-  always @ (posedge ser_clk or negedge reset_n)
+  always @ (posedge dcc_clk or negedge reset_n)
     begin
       if (reset_n == 1'b0)
         begin
