@@ -86,7 +86,7 @@ module dcc
                 if (ack & !ack_sync)
                   begin
                     bit_count <= bit_count + 1;
-                    if (bit_count == 8'd10)
+                    if (bit_count == 8'd16)
                       begin
                         state <= start_bit;
                         next_bit <= 1'b0;
