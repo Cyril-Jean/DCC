@@ -48,7 +48,7 @@ module dcc
         begin
           state <= idle;
           shift_out <= 7'h00;
-          next_bit <= 1'b0;
+          next_bit <= 1'b1;
           subword_idx <= 2'b00;
           err_det_byte <= 8'b0;
           cmd_index <= 0;

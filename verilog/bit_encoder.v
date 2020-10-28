@@ -40,8 +40,8 @@ module bit_encoder
     begin
       if (reset_n == 1'b0)
         begin
-          state <= zero_low;
-          next_bit <= 1'b0;
+          state <= one_low;
+          next_bit <= 1'b1;
           encoded_out <= 1'b0;
           ack <= 1'b0;
         end
