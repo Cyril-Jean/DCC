@@ -26,12 +26,12 @@ private:
     Vtop * top;
 
 public:
-    ApbBfm(Vtop * top);
+    ApbBfm(Vtop* top);
     ~ApbBfm();
 
     void write(uint32_t address, uint32_t value);
     uint32_t read(uint32_t address);
-    void drive_bus(int clock_state);
+    void drive_bus();
 };
 
 #endif

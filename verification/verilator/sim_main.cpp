@@ -15,17 +15,18 @@
 
 #include "dcc_analyzer.h"
 #include "apb_bfm.h"
+#include "apb_tests.h"
+#include "test_jig.h"
 
-// Current simulation time (64-bit unsigned)
-vluint64_t main_time = 0;
+TestJig * test_jig = NULL; 
+
 // Called by $time in Verilog
 double sc_time_stamp() {
-    return main_time;  // Note does conversion to real, to match SystemC
+    if (test_jig) return test_jig->get_main_time();
+    return 0;
 }
 
 int main(int argc, char** argv, char** env) {
-    DccAnalyzer dcc_analyzer;
-
     // Prevent unused variable warnings
     if (0 && argc && argv && env) {}
 
@@ -62,6 +63,8 @@ int main(int argc, char** argv, char** env) {
     }
 #endif
 
+    test_jig = new TestJig(top, tfp, apb_bfm);
+
     // Set some inputs
     top->reset_l = !1;
     top->presetn = !1;
@@ -69,61 +72,46 @@ int main(int argc, char** argv, char** env) {
     top->clk = !0;
 
     // Keep the reset active for a few clock cycles before really starting the fun.
-    for (int inc = 0; inc < 32; inc++) {
-        top->clk = !top->clk;
-        top->eval();
-    }
+    top->reset_l = !1;  // Assert reset
+    top->presetn = !1;
+
+    test_jig->advance_clk(8);
+
+    top->reset_l = !0;  // Deassert reset
+    top->presetn = !0;
+
+    test_jig->advance_clk(4);
+
+    ApbTests apb_tests;
+    apb_tests.run(test_jig);
+
 
     // Simulate until $finish
     while (!Verilated::gotFinish()) {
-        main_time++;  // Time passes...
 
-        // Toggle clocks and such
-//        top->fastclk = !top->fastclk;i
-        top->clk = !top->clk;
-//        if ((main_time % 10) == 3) {
-//            top->clk = 1;
-//        }
-//        if ((main_time % 10) == 8) {
-//            top->clk = 0;
-//        }
-        if (main_time > 1 && main_time < 10) {
-            top->reset_l = !1;  // Assert reset
-            top->presetn = !1;
-        } else {
-            top->reset_l = !0;  // Deassert reset
-            top->presetn = !0;
-        }
-
-        if (main_time == 20) {
+        if (test_jig->get_main_time() == 20) {
+//            apb_tests.run(test_jig);
+        };
+ 
+    
+        if (test_jig->get_main_time() == 800) {
             apb_bfm->write(0x800, 0x0DA7A6A5);
         };
-        if (main_time == 30) {
+        if (test_jig->get_main_time() == 900) {
             apb_bfm->write(0x804, 0x35020304);
         };
-         if (main_time == 40) {
+         if (test_jig->get_main_time() == 1000) {
             apb_bfm->read(0x800);
         };
-         if (main_time == 50) {
+         if (test_jig->get_main_time() == 1100) {
             apb_bfm->write(0x808, 0xB5123344);
         };
        
 
 
-        apb_bfm->drive_bus(top->clk);
+//        apb_bfm->drive_bus(top->clk);
 
-        // Evaluate model
-        top->eval();
-
-#if VM_TRACE
-        // Dump trace data for this cycle
-        if (tfp) tfp->dump(main_time);
-#endif
-
-        // Test track output
-        if (top->clk == 0) {
-            dcc_analyzer.SampleSignal(top->dcc_out);
-        }
+        test_jig->toggle_top_clk();
 
         // Read outputs
 #if 0

@@ -26,10 +26,12 @@ void ApbBfm::write(uint32_t address, uint32_t value) {
 uint32_t ApbBfm::read(uint32_t address) {
     curr_address = address;
     state = READ_SETUP;
+
+    
     return 0;
 };
 
-void ApbBfm::drive_bus(int clock) {
+void ApbBfm::drive_bus() {
     switch(state) {
         case IDLE:
             if(!top->clk) {
