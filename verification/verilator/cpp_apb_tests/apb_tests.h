@@ -1,6 +1,6 @@
 // MIT License
 // Copyright (c) 2020 Cyril Jean
-// SPDX-License-IDentifier: MIT
+// SPDX-License-Identifier: MIT
 
 #ifndef APB_TESTS_H
 #define APB_TESTS_H
@@ -14,6 +14,7 @@
 
 class ApbTests {
 private:
+    TestJig*        test_jig;
     Vtop *          top;
     ApbBfm *        bfm;
     vluint64_t *    main_time;
@@ -21,7 +22,7 @@ private:
     void drive_bus_a(int n_clock_cycles);
 
 public:
-    ApbTests();
+    ApbTests(TestJig* test_jig);
     ~ApbTests();
 
     int run(TestJig* test_jig);

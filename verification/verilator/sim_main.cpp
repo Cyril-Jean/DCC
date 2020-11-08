@@ -46,7 +46,7 @@ int main(int argc, char** argv, char** env) {
     Vtop* top = new Vtop;  // Or use a const unique_ptr, or the VL_UNIQUE_PTR wrapper
 
     // APB BFM relies on Vtop to expose one APB interface to its top level.
-    ApbBfm * apb_bfm = new ApbBfm(top);
+//    ApbBfm * apb_bfm = new ApbBfm(top);
 
 #if VM_TRACE
     // If verilator was invoked with --trace argument,
@@ -63,7 +63,7 @@ int main(int argc, char** argv, char** env) {
     }
 #endif
 
-    test_jig = new TestJig(top, tfp, apb_bfm);
+    test_jig = new TestJig(top, tfp);
 
     // Set some inputs
     top->reset_l = !1;
@@ -82,34 +82,15 @@ int main(int argc, char** argv, char** env) {
 
     test_jig->advance_clk(4);
 
-    ApbTests apb_tests;
+    ApbTests apb_tests(test_jig);
     apb_tests.run(test_jig);
 
+    test_jig->apb_bfm->write(0x800, 0x0DA7A6A5);
+    test_jig->apb_bfm->write(0x804, 0x35020304);
+    test_jig->apb_bfm->write(0x808, 0xB5123344);
 
     // Simulate until $finish
     while (!Verilated::gotFinish()) {
-
-        if (test_jig->get_main_time() == 20) {
-//            apb_tests.run(test_jig);
-        };
- 
-    
-        if (test_jig->get_main_time() == 800) {
-            apb_bfm->write(0x800, 0x0DA7A6A5);
-        };
-        if (test_jig->get_main_time() == 900) {
-            apb_bfm->write(0x804, 0x35020304);
-        };
-         if (test_jig->get_main_time() == 1000) {
-            apb_bfm->read(0x800);
-        };
-         if (test_jig->get_main_time() == 1100) {
-            apb_bfm->write(0x808, 0xB5123344);
-        };
-       
-
-
-//        apb_bfm->drive_bus(top->clk);
 
         test_jig->toggle_top_clk();
 

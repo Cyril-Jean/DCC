@@ -6,32 +6,38 @@
 #define APB_BFM
 
 #include "Vtop.h"
-
+#include "bfm_base.h"
 #include <stdint.h>
 
-class ApbBfm {
-private:
-    enum ApbState {
-        IDLE,
-        WRITE_SETUP,
-        WRITE_ACCESS,
-        READ_SETUP,
-        READ_ACCESS
-    };
+typedef enum ApbState {
+    IDLE,
+    ENTER_IDLE,
+    WRITE_SETUP,
+    WRITE_ACCESS,
+    READ_SETUP,
+    READ_ACCESS
+} ApbState_t;
 
-    ApbState state;
+
+class ApbBfm : public Bfm {
+public:
+    ApbBfm(Vtop* top, TestJigBase* test_jig);
+    ~ApbBfm();
+
+    void start_write_transaction(uint32_t address, uint32_t value);
+    void start_read_transaction(uint32_t address);
+    uint32_t read(uint32_t address);
+    void write(uint32_t address, uint32_t value);
+    void drive_bus();
+    ApbState_t get_bus_state();
+
+private:
+    ApbState_t state;
 
     uint32_t curr_address;
     uint32_t curr_value;
     Vtop * top;
-
-public:
-    ApbBfm(Vtop* top);
-    ~ApbBfm();
-
-    void write(uint32_t address, uint32_t value);
-    uint32_t read(uint32_t address);
-    void drive_bus();
+    TestJigBase* test_jig;
 };
 
 #endif

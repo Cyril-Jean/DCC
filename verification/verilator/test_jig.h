@@ -1,27 +1,27 @@
 // MIT License
 // Copyright (c) 2020 Cyril Jean
-// SPDX-License-IDentifier: MIT
+// SPDX-License-Identifier: MIT
 
 #ifndef TEST_JIG_H
 #define TEST_JIG_H
 
 #include "Vtop.h"
 #include <verilated_vcd_c.h>
-#include "apb_bfm.h"
+#include "bfm_base.h"
 #include "dcc_analyzer.h"
 
-class TestJig {
+class TestJig : public TestJigBase {
 private:
     vluint64_t main_time;
     VerilatedVcdC* tfp;
     DccAnalyzer dcc_analyzer;
 
 public:
-    TestJig(Vtop* top, VerilatedVcdC* tfp, ApbBfm* bfm);
+    TestJig(Vtop* top, VerilatedVcdC* tfp);
     ~TestJig();
 
     Vtop* top;
-    ApbBfm* apb_bfm;
+    Bfm * apb_bfm;
 
     void toggle_top_clk();
     void advance_clk(int n_clock_cycles);

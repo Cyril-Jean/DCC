@@ -66,7 +66,9 @@ run:
 					test_jig.cpp \
 					./cpp_analyzer/src/dcc_analyzer.cpp \
 					./cpp_apb_bfm/apb_bfm.cpp \
+					./cpp_bfm_base/bfm_base.cpp \
 					./cpp_apb_tests/apb_tests.cpp \
+					./cpp_test_jig_base/test_jig_base.cpp \
 					-y ../../verilog
 
 	@echo

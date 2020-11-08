@@ -1,15 +1,17 @@
 // MIT License
 // Copyright (c) 2020 Cyril Jean
-// SPDX-License-IDentifier: MIT
+// SPDX-License-Identifier: MIT
 
 #include "test_jig.h"
+#include "apb_bfm.h"
 
-TestJig::TestJig(Vtop * in_top, VerilatedVcdC* in_tfp, ApbBfm* in_bfm) {
+TestJig::TestJig(Vtop * in_top, VerilatedVcdC* in_tfp) {
     main_time = 0; 
     top = in_top;
     tfp = in_tfp;
-    apb_bfm = in_bfm;
+    apb_bfm = new ApbBfm(top, this);
 }
+
 
 TestJig::~TestJig() {
 }
